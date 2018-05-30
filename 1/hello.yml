@@ -1,0 +1,10 @@
+- name: hola
+  hosts: localhost
+  tasks:
+  - name: Echo
+    shell: echo "hello world!"
+    register: outp
+  - name: Printing out
+    debug:
+    msg: "{{ outp.stdout }}"
+

@@ -1,0 +1,71 @@
+version: "2.2"
+
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.33.0.0/16
+
+services:
+  myapps:
+    build: 
+      context: .
+      dockerfile: apps.Dockerfile
+    container_name: myapps
+    networks:
+    - mynet
+
+  myconfs:
+    build:
+      context: .
+      dockerfile: confs.Dockerfile
+    container_name: myconfs
+    networks:
+    - mynet
+
+  mytomcat:
+    build:
+      context: .
+      dockerfile: tomcat.Dockerfile
+    container_name: mytomcat
+    volumes_from: 
+      - myapps
+    networks:
+      mynet:
+        ipv4_address: 172.33.0.4
+    ulimits:
+      nproc: 20000
+      nofile:
+        hard: 16384
+        soft: 8192
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://127.0.0.1:514
+        tag: mytomcat
+
+  mynginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    container_name: mynginx
+    ports:
+      - 80:80
+    volumes_from:
+      - myconfs
+    links:
+      - mytomcat:tomcat
+    networks:
+      mynet:
+        ipv4_address: 172.33.0.5
+    ulimits:
+      nproc: 20000
+      nofile:
+        hard: 16384
+        soft: 8192
+    logging:
+      driver: syslog
+      options:
+        syslog-address: tcp://127.0.0.1:514
+        tag: mynginx
